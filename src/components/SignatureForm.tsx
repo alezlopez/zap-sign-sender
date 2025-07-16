@@ -17,18 +17,57 @@ const SignatureForm = () => {
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
-    whatsapp: '',
+    whatsapp: '+55 ',
     arquivo: null
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
+  const formatWhatsAppInput = (value: string): string => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '');
+    
+    // Se começar com 55, remove para evitar duplicação
+    const cleanNumbers = numbers.startsWith('55') ? numbers.slice(2) : numbers;
+    
+    // Limita a 11 dígitos (2 DDD + 9 número)
+    const limitedNumbers = cleanNumbers.slice(0, 11);
+    
+    // Formata: +55 (XX) XXXXX-XXXX
+    if (limitedNumbers.length === 0) return '+55 ';
+    if (limitedNumbers.length <= 2) return `+55 (${limitedNumbers}`;
+    if (limitedNumbers.length <= 7) return `+55 (${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2)}`;
+    return `+55 (${limitedNumbers.slice(0, 2)}) ${limitedNumbers.slice(2, 7)}-${limitedNumbers.slice(7)}`;
+  };
+
+  const formatWhatsAppForSubmit = (value: string): string => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '');
+    
+    // Se já tem 55 no início, usa como está, senão adiciona
+    if (numbers.startsWith('55') && numbers.length >= 13) {
+      return numbers.slice(0, 13);
+    }
+    
+    // Adiciona 55 e limita a 13 dígitos total
+    const withCountryCode = '55' + numbers;
+    return withCountryCode.slice(0, 13);
+  };
+
   const handleInputChange = (field: keyof FormData, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    if (field === 'whatsapp') {
+      const formattedValue = formatWhatsAppInput(value);
+      setFormData(prev => ({
+        ...prev,
+        [field]: formattedValue
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,10 +120,11 @@ const SignatureForm = () => {
       return false;
     }
 
-    if (!formData.whatsapp.trim()) {
+    const whatsappNumbers = formData.whatsapp.replace(/\D/g, '');
+    if (!formData.whatsapp.trim() || whatsappNumbers.length < 11) {
       toast({
         title: "Erro de validação",
-        description: "WhatsApp é obrigatório",
+        description: "WhatsApp deve ter DDD + 9 dígitos (ex: +55 (11) 99999-9999)",
         variant: "destructive",
       });
       return false;
@@ -113,7 +153,7 @@ const SignatureForm = () => {
       const submitFormData = new FormData();
       submitFormData.append('nome', formData.nome);
       submitFormData.append('email', formData.email);
-      submitFormData.append('whatsapp', formData.whatsapp);
+      submitFormData.append('whatsapp', formatWhatsAppForSubmit(formData.whatsapp));
       if (formData.arquivo) {
         submitFormData.append('arquivo', formData.arquivo);
       }
@@ -133,7 +173,7 @@ const SignatureForm = () => {
         setFormData({
           nome: '',
           email: '',
-          whatsapp: '',
+          whatsapp: '+55 ',
           arquivo: null
         });
       } else {
@@ -202,7 +242,7 @@ const SignatureForm = () => {
               <Input
                 id="whatsapp"
                 type="tel"
-                placeholder="(11) 99999-9999"
+                placeholder="+55 (11) 99999-9999"
                 value={formData.whatsapp}
                 onChange={(e) => handleInputChange('whatsapp', e.target.value)}
                 className="w-full"
