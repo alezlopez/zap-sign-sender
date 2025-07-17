@@ -10,6 +10,8 @@ interface FormData {
   nome: string;
   email: string;
   whatsapp: string;
+  nomeAluno: string;
+  cpfResponsavel: string;
   arquivo: File | null;
 }
 
@@ -18,6 +20,8 @@ const SignatureForm = () => {
     nome: '',
     email: '',
     whatsapp: '+55 ',
+    nomeAluno: '',
+    cpfResponsavel: '',
     arquivo: null
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -55,9 +59,29 @@ const SignatureForm = () => {
     return withCountryCode.slice(0, 13);
   };
 
+  const formatCPFInput = (value: string): string => {
+    // Remove todos os caracteres não numéricos
+    const numbers = value.replace(/\D/g, '');
+    
+    // Limita a 11 dígitos
+    const limitedNumbers = numbers.slice(0, 11);
+    
+    // Formata: XXX.XXX.XXX-XX
+    if (limitedNumbers.length <= 3) return limitedNumbers;
+    if (limitedNumbers.length <= 6) return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3)}`;
+    if (limitedNumbers.length <= 9) return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3, 6)}.${limitedNumbers.slice(6)}`;
+    return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3, 6)}.${limitedNumbers.slice(6, 9)}-${limitedNumbers.slice(9)}`;
+  };
+
   const handleInputChange = (field: keyof FormData, value: string) => {
     if (field === 'whatsapp') {
       const formattedValue = formatWhatsAppInput(value);
+      setFormData(prev => ({
+        ...prev,
+        [field]: formattedValue
+      }));
+    } else if (field === 'cpfResponsavel') {
+      const formattedValue = formatCPFInput(value);
       setFormData(prev => ({
         ...prev,
         [field]: formattedValue
@@ -130,6 +154,25 @@ const SignatureForm = () => {
       return false;
     }
 
+    if (!formData.nomeAluno.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "Nome do aluno é obrigatório",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    const cpfNumbers = formData.cpfResponsavel.replace(/\D/g, '');
+    if (!formData.cpfResponsavel.trim() || cpfNumbers.length !== 11) {
+      toast({
+        title: "Erro de validação",
+        description: "CPF deve conter 11 dígitos",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     if (!formData.arquivo) {
       toast({
         title: "Erro de validação",
@@ -154,6 +197,8 @@ const SignatureForm = () => {
       submitFormData.append('nome', formData.nome);
       submitFormData.append('email', formData.email);
       submitFormData.append('whatsapp', formatWhatsAppForSubmit(formData.whatsapp));
+      submitFormData.append('nomeAluno', formData.nomeAluno);
+      submitFormData.append('cpfResponsavel', formData.cpfResponsavel.replace(/\D/g, ''));
       if (formData.arquivo) {
         submitFormData.append('arquivo', formData.arquivo);
       }
@@ -174,6 +219,8 @@ const SignatureForm = () => {
           nome: '',
           email: '',
           whatsapp: '+55 ',
+          nomeAluno: '',
+          cpfResponsavel: '',
           arquivo: null
         });
       } else {
@@ -245,6 +292,36 @@ const SignatureForm = () => {
                 placeholder="+55 (11) 99999-9999"
                 value={formData.whatsapp}
                 onChange={(e) => handleInputChange('whatsapp', e.target.value)}
+                className="w-full"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="nomeAluno" className="text-sm font-medium">
+                Nome do Aluno
+              </Label>
+              <Input
+                id="nomeAluno"
+                type="text"
+                placeholder="Digite o nome do aluno"
+                value={formData.nomeAluno}
+                onChange={(e) => handleInputChange('nomeAluno', e.target.value)}
+                className="w-full"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cpfResponsavel" className="text-sm font-medium">
+                CPF do Responsável
+              </Label>
+              <Input
+                id="cpfResponsavel"
+                type="text"
+                placeholder="000.000.000-00"
+                value={formData.cpfResponsavel}
+                onChange={(e) => handleInputChange('cpfResponsavel', e.target.value)}
                 className="w-full"
                 required
               />
