@@ -10,6 +10,7 @@ interface FormData {
   nome: string;
   email: string;
   whatsapp: string;
+  codigoAluno: string;
   nomeAluno: string;
   cpfResponsavel: string;
   arquivo: File | null;
@@ -20,6 +21,7 @@ const SignatureForm = () => {
     nome: '',
     email: '',
     whatsapp: '+55 ',
+    codigoAluno: '',
     nomeAluno: '',
     cpfResponsavel: '',
     arquivo: null
@@ -154,6 +156,15 @@ const SignatureForm = () => {
       return false;
     }
 
+    if (!formData.codigoAluno.trim()) {
+      toast({
+        title: "Erro de validação",
+        description: "Código do aluno é obrigatório",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     if (!formData.nomeAluno.trim()) {
       toast({
         title: "Erro de validação",
@@ -197,6 +208,7 @@ const SignatureForm = () => {
       submitFormData.append('nome', formData.nome);
       submitFormData.append('email', formData.email);
       submitFormData.append('whatsapp', formatWhatsAppForSubmit(formData.whatsapp));
+      submitFormData.append('codigoAluno', formData.codigoAluno);
       submitFormData.append('nomeAluno', formData.nomeAluno);
       submitFormData.append('cpfResponsavel', formData.cpfResponsavel.replace(/\D/g, ''));
       if (formData.arquivo) {
@@ -219,6 +231,7 @@ const SignatureForm = () => {
           nome: '',
           email: '',
           whatsapp: '+55 ',
+          codigoAluno: '',
           nomeAluno: '',
           cpfResponsavel: '',
           arquivo: null
@@ -292,6 +305,21 @@ const SignatureForm = () => {
                 placeholder="+55 (11) 99999-9999"
                 value={formData.whatsapp}
                 onChange={(e) => handleInputChange('whatsapp', e.target.value)}
+                className="w-full"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="codigoAluno" className="text-sm font-medium">
+                Código do Aluno
+              </Label>
+              <Input
+                id="codigoAluno"
+                type="text"
+                placeholder="Digite o código do aluno"
+                value={formData.codigoAluno}
+                onChange={(e) => handleInputChange('codigoAluno', e.target.value)}
                 className="w-full"
                 required
               />
