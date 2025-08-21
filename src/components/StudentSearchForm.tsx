@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ArrowLeft, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +26,6 @@ interface StudentSearchFormProps {
 
 const StudentSearchForm = ({ onBack, onStudentFound }: StudentSearchFormProps) => {
   const [codigoAluno, setCodigoAluno] = useState('');
-  const [responsavelTipo, setResponsavelTipo] = useState<'pai' | 'mae'>('pai');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -61,6 +59,15 @@ const StudentSearchForm = ({ onBack, onStudentFound }: StudentSearchFormProps) =
     if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
     if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
     return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`;
+  };
+
+  const getCompletedFieldsCount = (nome: string, email: string, telefone: string, cpf: string): number => {
+    let count = 0;
+    if (nome && nome.trim()) count++;
+    if (email && email.trim()) count++;
+    if (telefone && telefone.trim()) count++;
+    if (cpf && cpf.trim()) count++;
+    return count;
   };
 
   const handleSearch = async () => {
@@ -114,22 +121,74 @@ const StudentSearchForm = ({ onBack, onStudentFound }: StudentSearchFormProps) =
 
       const rematriculaRecord = rematriculaData?.[0];
 
-      // Prepara os dados do responsável baseado na seleção
+      // Lógica inteligente para escolher o responsável
       let responsavelData;
       
-      if (responsavelTipo === 'pai') {
-        responsavelData = {
-          nome: rematriculaRecord?.["Nome do Pai"] || alunosData.nome_responsavel || '',
-          email: rematriculaRecord?.["Email do Pai"] || alunosData.email_resp || '',
-          whatsapp: formatWhatsApp(rematriculaRecord?.["Telefone do Pai"] || alunosData.whatsapp_fin || ''),
-          cpf: formatCPF(rematriculaRecord?.["CPF do Pai"] || alunosData.CPF_resp_fin || ''),
-        };
+      if (rematriculaRecord) {
+        const respFinanceiro = rematriculaRecord["Resp. Financeiro"] || '';
+        
+        // Verifica se "Resp. Financeiro" indica preferência
+        if (respFinanceiro.toLowerCase().includes('pai')) {
+          responsavelData = {
+            nome: rematriculaRecord["Nome do Pai"] || '',
+            email: rematriculaRecord["Email do Pai"] || '',
+            whatsapp: formatWhatsApp(rematriculaRecord["Telefone do Pai"] || ''),
+            cpf: formatCPF(rematriculaRecord["CPF do Pai"] || ''),
+          };
+        } else if (respFinanceiro.toLowerCase().includes('mãe') || respFinanceiro.toLowerCase().includes('mae')) {
+          responsavelData = {
+            nome: rematriculaRecord["Nome da mãe"] || '',
+            email: rematriculaRecord["Email da Mãe"] || '',
+            whatsapp: formatWhatsApp(rematriculaRecord["Telefone da Mãe"] || ''),
+            cpf: formatCPF(rematriculaRecord["CPF da mãe"] || ''),
+          };
+        } else {
+          // Não há preferência clara, escolher quem tem mais dados completos
+          const paiFields = getCompletedFieldsCount(
+            rematriculaRecord["Nome do Pai"] || '',
+            rematriculaRecord["Email do Pai"] || '',
+            rematriculaRecord["Telefone do Pai"] || '',
+            rematriculaRecord["CPF do Pai"] || ''
+          );
+          
+          const maeFields = getCompletedFieldsCount(
+            rematriculaRecord["Nome da mãe"] || '',
+            rematriculaRecord["Email da Mãe"] || '',
+            rematriculaRecord["Telefone da Mãe"] || '',
+            rematriculaRecord["CPF da mãe"] || ''
+          );
+
+          if (paiFields > maeFields) {
+            responsavelData = {
+              nome: rematriculaRecord["Nome do Pai"] || '',
+              email: rematriculaRecord["Email do Pai"] || '',
+              whatsapp: formatWhatsApp(rematriculaRecord["Telefone do Pai"] || ''),
+              cpf: formatCPF(rematriculaRecord["CPF do Pai"] || ''),
+            };
+          } else if (maeFields > paiFields) {
+            responsavelData = {
+              nome: rematriculaRecord["Nome da mãe"] || '',
+              email: rematriculaRecord["Email da Mãe"] || '',
+              whatsapp: formatWhatsApp(rematriculaRecord["Telefone da Mãe"] || ''),
+              cpf: formatCPF(rematriculaRecord["CPF da mãe"] || ''),
+            };
+          } else {
+            // Empate ou ambos vazios, usar dados de alunosIntegraSae como fallback
+            responsavelData = {
+              nome: alunosData.nome_responsavel || '',
+              email: alunosData.email_resp || '',
+              whatsapp: formatWhatsApp(alunosData.whatsapp_fin || ''),
+              cpf: formatCPF(alunosData.CPF_resp_fin || ''),
+            };
+          }
+        }
       } else {
+        // Não há dados de rematrícula, usar apenas alunosIntegraSae
         responsavelData = {
-          nome: rematriculaRecord?.["Nome da mãe"] || alunosData.nome_responsavel || '',
-          email: rematriculaRecord?.["Email da Mãe"] || alunosData.email_resp || '',
-          whatsapp: formatWhatsApp(rematriculaRecord?.["Telefone da Mãe"] || alunosData.whatsapp_fin || ''),
-          cpf: formatCPF(rematriculaRecord?.["CPF da mãe"] || alunosData.CPF_resp_fin || ''),
+          nome: alunosData.nome_responsavel || '',
+          email: alunosData.email_resp || '',
+          whatsapp: formatWhatsApp(alunosData.whatsapp_fin || ''),
+          cpf: formatCPF(alunosData.CPF_resp_fin || ''),
         };
       }
 
@@ -179,23 +238,6 @@ const StudentSearchForm = ({ onBack, onStudentFound }: StudentSearchFormProps) =
               className="w-full"
               required
             />
-          </div>
-
-          <div className="space-y-3">
-            <Label className="text-sm font-medium">Responsável</Label>
-            <RadioGroup 
-              value={responsavelTipo} 
-              onValueChange={(value) => setResponsavelTipo(value as 'pai' | 'mae')}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="pai" id="pai" />
-                <Label htmlFor="pai">Pai</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="mae" id="mae" />
-                <Label htmlFor="mae">Mãe</Label>
-              </div>
-            </RadioGroup>
           </div>
 
           <div className="space-y-3">

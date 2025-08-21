@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, Send, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Upload, FileText, Send, CheckCircle, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import StudentTypeSelector from './StudentTypeSelector';
 import StudentSearchForm from './StudentSearchForm';
@@ -339,6 +340,16 @@ const SignatureForm = () => {
         </CardHeader>
         
         <CardContent>
+          {studentType === 'rematricula' && (
+            <Alert className="mb-6 border-amber-200 bg-amber-50">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertTitle className="text-amber-800">Confirme os dados antes de enviar</AlertTitle>
+              <AlertDescription className="text-amber-700">
+                Verifique principalmente se o <strong>Signatário está correto</strong>. Você pode editar qualquer campo antes de enviar.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="nome" className="text-sm font-medium">
