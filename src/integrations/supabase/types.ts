@@ -658,6 +658,21 @@ export type Database = {
           similarity: number
         }[]
       }
+      rematricula_by_codigo_aluno: {
+        Args: { p_cod_aluno: number }
+        Returns: {
+          "Cod Aluno": number
+          "CPF da mãe": string
+          "CPF do Pai": string
+          "Email da Mãe": string
+          "Email do Pai": string
+          "Nome da mãe": string
+          "Nome do Aluno": string
+          "Nome do Pai": string
+          "Telefone da Mãe": string
+          "Telefone do Pai": string
+        }[]
+      }
       rematricula_by_cpf: {
         Args: { p_cpf: string }
         Returns: {

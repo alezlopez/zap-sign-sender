@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, FileText, Send, CheckCircle } from 'lucide-react';
+import { Upload, FileText, Send, CheckCircle, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import StudentTypeSelector from './StudentTypeSelector';
+import StudentSearchForm from './StudentSearchForm';
 
 interface FormData {
   nome: string;
@@ -16,7 +18,22 @@ interface FormData {
   arquivo: File | null;
 }
 
+interface StudentData {
+  codigoAluno: string;
+  nomeAluno: string;
+  responsavelData: {
+    nome: string;
+    email: string;
+    whatsapp: string;
+    cpf: string;
+  };
+}
+
+type FlowStep = 'selector' | 'search' | 'form';
+
 const SignatureForm = () => {
+  const [currentStep, setCurrentStep] = useState<FlowStep>('selector');
+  const [studentType, setStudentType] = useState<'novo' | 'rematricula' | null>(null);
   const [formData, setFormData] = useState<FormData>({
     nome: '',
     email: '',
@@ -73,6 +90,47 @@ const SignatureForm = () => {
     if (limitedNumbers.length <= 6) return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3)}`;
     if (limitedNumbers.length <= 9) return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3, 6)}.${limitedNumbers.slice(6)}`;
     return `${limitedNumbers.slice(0, 3)}.${limitedNumbers.slice(3, 6)}.${limitedNumbers.slice(6, 9)}-${limitedNumbers.slice(9)}`;
+  };
+
+  const handleTypeSelection = (type: 'novo' | 'rematricula') => {
+    setStudentType(type);
+    if (type === 'novo') {
+      setCurrentStep('form');
+    } else {
+      setCurrentStep('search');
+    }
+  };
+
+  const handleStudentFound = (studentData: StudentData) => {
+    setFormData(prev => ({
+      ...prev,
+      nome: studentData.responsavelData.nome,
+      email: studentData.responsavelData.email,
+      whatsapp: studentData.responsavelData.whatsapp,
+      codigoAluno: studentData.codigoAluno,
+      nomeAluno: studentData.nomeAluno,
+      cpfResponsavel: studentData.responsavelData.cpf,
+    }));
+    setCurrentStep('form');
+  };
+
+  const handleBackToSelector = () => {
+    setCurrentStep('selector');
+    setStudentType(null);
+    // Reset form when going back to selector
+    setFormData({
+      nome: '',
+      email: '',
+      whatsapp: '+55 ',
+      codigoAluno: '',
+      nomeAluno: '',
+      cpfResponsavel: '',
+      arquivo: null
+    });
+  };
+
+  const handleBackToSearch = () => {
+    setCurrentStep('search');
   };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
@@ -236,6 +294,10 @@ const SignatureForm = () => {
           cpfResponsavel: '',
           arquivo: null
         });
+        
+        // Volta para o seletor
+        setCurrentStep('selector');
+        setStudentType(null);
       } else {
         throw new Error('Falha no envio');
       }
@@ -251,6 +313,19 @@ const SignatureForm = () => {
     }
   };
 
+  if (currentStep === 'selector') {
+    return <StudentTypeSelector onSelectType={handleTypeSelection} />;
+  }
+
+  if (currentStep === 'search') {
+    return (
+      <StudentSearchForm 
+        onBack={handleBackToSelector}
+        onStudentFound={handleStudentFound}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-primary/10 p-4 flex items-center justify-center">
       <Card className="w-full max-w-md shadow-lg">
@@ -259,7 +334,7 @@ const SignatureForm = () => {
             Envio para Assinatura
           </CardTitle>
           <CardDescription>
-            Preencha os dados do signatário e faça upload do documento
+            {studentType === 'novo' ? 'Preencha os dados do aluno novo' : 'Dados pré-preenchidos da rematrícula'}
           </CardDescription>
         </CardHeader>
         
@@ -398,23 +473,37 @@ const SignatureForm = () => {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md" 
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Enviando...</span>
-                </div>
-              ) : (
-                <div className="flex items-center space-x-2">
-                  <Send size={16} />
-                  <span>Enviar para Assinatura</span>
-                </div>
+            <div className="space-y-3">
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Enviando...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2">
+                    <Send size={16} />
+                    <span>Enviar para Assinatura</span>
+                  </div>
+                )}
+              </Button>
+
+              {studentType === 'rematricula' && (
+                <Button 
+                  type="button"
+                  onClick={handleBackToSearch}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <ArrowLeft size={16} className="mr-2" />
+                  Buscar Outro Aluno
+                </Button>
               )}
-            </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
