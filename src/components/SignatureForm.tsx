@@ -270,6 +270,7 @@ const SignatureForm = () => {
       submitFormData.append('codigoAluno', formData.codigoAluno);
       submitFormData.append('nomeAluno', formData.nomeAluno);
       submitFormData.append('cpfResponsavel', formData.cpfResponsavel.replace(/\D/g, ''));
+      submitFormData.append('tipoAluno', studentType || 'novo');
       if (formData.arquivo) {
         submitFormData.append('arquivo', formData.arquivo);
       }
